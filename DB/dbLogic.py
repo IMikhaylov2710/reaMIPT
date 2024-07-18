@@ -17,19 +17,25 @@ def handleRequest(callbackData, conn):
             conn.commit()
             print(f'реагент {row[0]} запушен')
         elif toDo == 'pull':
-            sql = """UPDATE reagents SET quantity = quantity-1 
-                    WHERE name =%s
+            sql = """UPDATE reagents SET quantity = quantity - 1 
+                    WHERE name = '%s'
                     """ % row[0]
             cur.execute(sql)
-            print(sql)
             conn.commit()
+            print(f'Реагент {row[0]} запулен')
     else:
         return 'Этого реагента пока нет в базе'
 
+def getClasses(conn):
+    cur = conn.cursor()
+    sql = """SELECT DISTINCT class FROM aliases"""
+    cur.execute(sql)
+    row = cur.fetchall()
+    return row
 
 def createNewAlias(name, conn):
     cur = conn.cursor()
-    cur.execute("""select * from aliases where name =?""", name)
+    cur.execute("""SELECT * FROM aliases WHERE name =?""", name)
     row = cur.fetchone()
     if row:
         return cur.lastowid

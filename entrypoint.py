@@ -1,7 +1,7 @@
 import telebot
 from telebot import types
 import sqlite3
-from DB.dbLogic import handleRequest, createNewAlias, getItemsByClass
+from DB.dbLogic import handleRequest, createNewAlias, getItemsByClass, getClasses
 
 bot = telebot.TeleBot('7016692600:AAEjyXhtwlfiXleml-yGCqvw3UHfnQTACtM')
     
@@ -31,13 +31,14 @@ def admin(message):
     markup.add(btn1, btn2)
     bot.send_message(message.from_user.id, "Админ", reply_markup=markup)
 
-@bot.message_handler(func=lambda message: message.from_user.id in admins, command=['statistics'])
+@bot.message_handler(func=lambda message: message.from_user.id in admins, commands=['statistics'])
 def stat(message):
+    classes = getClasses(connection)
     markup = types.InlineKeyboardMarkup()
-    btn1 = types.InlineKeyboardButton("Управление БД", callback_data='DBedit')
-    btn2 = types.InlineKeyboardButton('Внести нового пользователя', callback_data='UserReg')
-    markup.add(btn1, btn2)
-    bot.send_message(message.from_user.id, 'Stat', reply_markup=markup)
+    for i in classes:
+        btn = types.InlineKeyboardButton(i[0], callback_data='info|'+i[0])
+        markup.add(btn)
+    bot.send_message(message.from_user.id, 'Выберите класс, для которого вы хотите получить информацию о наличии', reply_markup=markup)
 
 @bot.message_handler(func=lambda message: message.from_user.id in users, commands=['start'])
 def start(message):
@@ -109,7 +110,7 @@ def callback_worker(call):
         currentClass = 'cleanup'
         items = getItemsByClass(currentClass, connection)
         for item in items:
-            print(len(item[0]), 'push|'+item[1])
+            print(len(item[0]), 'pull|'+item[1])
             button = types.InlineKeyboardButton(str(item[0]).rstrip(), callback_data='pull|'+item[1])
             markup.add(button)
         bot.send_message(call.message.chat.id, "Внести набор для выделения, чтобы списать один", reply_markup=markup)
@@ -119,7 +120,7 @@ def callback_worker(call):
         currentClass = 'NGS'
         items = getItemsByClass(currentClass, connection)
         for item in items:
-            print(len(item[0]), 'push|'+item[1])
+            print(len(item[0]), 'pull|'+item[1])
             button = types.InlineKeyboardButton(str(item[0]).rstrip(), callback_data='pull|'+item[1])
             markup.add(button)
         bot.send_message(call.message.chat.id, "Выберите набор для NGS, чтобы списать", reply_markup=markup)
