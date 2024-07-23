@@ -16,8 +16,7 @@ test_data = [[
 ]
 
 usersDic = {
-    121420608: 'i.mikhailov',
-    251946129: 'p.molodtsova'
+    121420608: 'i.mikhailov'
 }
 
 cur = conn.cursor()
