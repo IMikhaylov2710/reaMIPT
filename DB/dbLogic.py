@@ -2,34 +2,54 @@ import sqlite3
 import hashlib
 
 def handleRequest(callbackData, conn):
+    with conn:
+        callDataSplit = callbackData.split('|')
+        hash = callDataSplit[1]
+        toDo = callDataSplit[0]
+        cur = conn.cursor()
+        cur.execute("""select * from aliases where alias = ?""", (hash, ))
+        row = cur.fetchone()
+        if row:
+            if toDo == 'push':
+                sql = """INSERT INTO reagents VALUES (?, ?)
+                ON CONFLICT(name) DO UPDATE
+                SET quantity = quantity + 1"""
+                cur.execute(sql, (row[0], 1))
+                conn.commit()
+
+            elif toDo == 'pull':
+                sql = """UPDATE reagents SET quantity = quantity - 1 
+                        WHERE name = '%s'
+                        """ % row[0]
+                cur.execute(sql)
+                conn.commit()
+
+        else:
+            return 'Этого реагента пока нет в базе'
+        
+def handleRequestInfo(callbackData, conn):
     callDataSplit = callbackData.split('|')
     hash = callDataSplit[1]
-    toDo = callDataSplit[0]
-    cur = conn.cursor()
-    cur.execute("""select * from aliases where alias =?""", (hash, ))
-    row = cur.fetchone()
-    if row:
-        if toDo == 'push':
-            sql = """INSERT INTO reagents VALUES (?, ?)
-            ON CONFLICT(name) DO UPDATE
-            SET quantity = quantity + 1"""
-            cur.execute(sql, (row[0], 1))
-            conn.commit()
-            print(f'реагент {row[0]} запушен')
-        elif toDo == 'pull':
-            sql = """UPDATE reagents SET quantity = quantity - 1 
-                    WHERE name = '%s'
-                    """ % row[0]
-            cur.execute(sql)
-            conn.commit()
-            print(f'Реагент {row[0]} запулен')
-    else:
-        return 'Этого реагента пока нет в базе'
+    with conn:
+        cur = conn.cursor()
+        sqlResult = """SELECT * FROM reagents WHERE alias = '%s'""" % hash
+        print(sqlResult)
+        cur.execute(sqlResult)
+        row = cur.fetchall()
+
+    return row
 
 def getClasses(conn):
     cur = conn.cursor()
     sql = """SELECT DISTINCT class FROM aliases"""
     cur.execute(sql)
+    row = cur.fetchall()
+    return row
+
+def getQuantityByClass(conn, classForFetch):
+    cur = conn.cursor()
+    sql = """SELECT * FROM aliases WHERE class =(?)"""
+    cur.execute(sql, classForFetch)
     row = cur.fetchall()
     return row
 

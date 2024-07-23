@@ -1,7 +1,7 @@
 import telebot
 from telebot import types
 import sqlite3
-from DB.dbLogic import handleRequest, createNewAlias, getItemsByClass, getClasses
+from DB.dbLogic import handleRequest, createNewAlias, getItemsByClass, getClasses, handleRequestInfo
 
 bot = telebot.TeleBot('7016692600:AAEjyXhtwlfiXleml-yGCqvw3UHfnQTACtM')
     
@@ -76,6 +76,7 @@ def callback_worker(call):
         btn1 = types.InlineKeyboardButton("Выделение", callback_data='pushCleanup')
         btn2 = types.InlineKeyboardButton("NGS", callback_data='pushNGS')
         markup.add(btn1, btn2)
+        markup.add(types.InlineKeyboardButton("в начало >", callback_data='globalStart'))
         bot.send_message(call.message.chat.id, "Внести реактивы", reply_markup=markup)
     
     elif call.data == 'pushCleanup':
@@ -86,6 +87,7 @@ def callback_worker(call):
             print(len(item[0]), 'push|'+item[1])
             button = types.InlineKeyboardButton(str(item[0]).rstrip(), callback_data='push|'+item[1])
             markup.add(button)
+        markup.add(types.InlineKeyboardButton("в начало >", callback_data='globalStart'))
         bot.send_message(call.message.chat.id, "Внести набор для выделения, чтобы внести один в базу", reply_markup=markup)
 
     elif call.data == 'pushNGS':
@@ -96,6 +98,7 @@ def callback_worker(call):
             print(len(item[0]), 'push|'+item[1])
             button = types.InlineKeyboardButton(str(item[0]).rstrip(), callback_data='push|'+item[1])
             markup.add(button)
+        markup.add(types.InlineKeyboardButton("в начало >", callback_data='globalStart'))
         bot.send_message(call.message.chat.id, "Выберите набор для NGS, чтобы внести один в базу", reply_markup=markup)
 
     elif call.data == 'pullReag':
@@ -103,6 +106,7 @@ def callback_worker(call):
         btn1 = types.InlineKeyboardButton("Выделение", callback_data='pullCleanup')
         btn2 = types.InlineKeyboardButton("NGS", callback_data='pullNGS')
         markup.add(btn1, btn2)
+        markup.add(types.InlineKeyboardButton("в начало >", callback_data='globalStart'))
         bot.send_message(call.message.chat.id, "Списать набор", reply_markup=markup)
     
     elif call.data == 'pullCleanup':
@@ -113,6 +117,7 @@ def callback_worker(call):
             print(len(item[0]), 'pull|'+item[1])
             button = types.InlineKeyboardButton(str(item[0]).rstrip(), callback_data='pull|'+item[1])
             markup.add(button)
+        markup.add(types.InlineKeyboardButton("в начало >", callback_data='globalStart'))
         bot.send_message(call.message.chat.id, "Внести набор для выделения, чтобы списать один", reply_markup=markup)
 
     elif call.data == 'pullNGS':
@@ -123,11 +128,14 @@ def callback_worker(call):
             print(len(item[0]), 'pull|'+item[1])
             button = types.InlineKeyboardButton(str(item[0]).rstrip(), callback_data='pull|'+item[1])
             markup.add(button)
+        markup.add(types.InlineKeyboardButton("в начало >", callback_data='globalStart'))
         bot.send_message(call.message.chat.id, "Выберите набор для NGS, чтобы списать", reply_markup=markup)
 
     else:
         try:
             handleRequest(call.data, connection)
+            res = handleRequestInfo(call.data, connection)
+            bot.send_message(call.message.chat.id, res)
         except:
             bot.send_message(call.message.chat.id, 'Что-то серьезно сломалось, пишите @bochonni')
 

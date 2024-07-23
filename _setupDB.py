@@ -16,6 +16,7 @@ test_data = [[
 ]
 
 cur = conn.cursor()
+
 for i in test_data:
     sql = """INSERT OR REPLACE INTO reagents VALUES (?, ?)"""
     cur.execute(sql, (i[0], i[1]))
