@@ -1,0 +1,2 @@
+newUserAddition = False
+newUserRole = ''
