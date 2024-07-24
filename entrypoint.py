@@ -3,10 +3,10 @@ from telebot import types
 import sqlite3
 import hashlib
 import config
-from DB.dbLogic import handleRequest, createNewAlias, getItemsByClass, getClasses, handleRequestInfo, getUsers, addUser
+from DB.dbLogic import handleRequest, createNewAlias, getItemsByClass, getClasses, handleRequestInfo, getUsers, addUser, createNewDBinstance
 from helpers.sequrityLogic import hashUser
 
-bot = telebot.TeleBot('')
+bot = telebot.TeleBot('7016692600:AAEjyXhtwlfiXleml-yGCqvw3UHfnQTACtM')
     
 bot.approve_chat_join_request
 
@@ -53,13 +53,35 @@ def stat(message):
 
 @bot.message_handler(func=lambda message: hashUser(message.from_user.id) in users, commands=['start'])
 def start(message):
+    config.newReagentAddition = False
+    config.newClass = ''
+    config.newUserAddition = False
+    config.newUserRole = ''
     markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton("Go", callback_data = 'globalStart')
     markup.add(btn1)
     bot.send_message(message.from_user.id, "Привет! Я - бот для учета реактивов. Не забывайте мной пользоваться, чтобы вносить и списывать реагенты.", reply_markup=markup)
+
+@bot.message_handler(func=lambda message: hashUser(message.from_user.id) in users, commands=['add'])
+def start(message):
+    config.newReagentAddition = False
+    config.newClass = ''
+    classes = getClasses(connection)
+    config.newUserAddition = False
+    config.newUserRole = ''
+    config.newReagentAddition = True
+    markup = types.InlineKeyboardMarkup()
+    for newClass in classes:
+        markup.add(types.InlineKeyboardButton(f'{newClass[0]}', callback_data=f'newClassInstance|{newClass[0]}'))
+    markup.add(types.InlineKeyboardButton("в начало >", callback_data='globalStart'))
+    bot.send_message(message.from_user.id, "Выберите название класса, к которому будет относиться новый реагент", reply_markup=markup)
     
 @bot.message_handler(func=lambda message: hashUser(message.from_user.id) in users, commands=['new'])
 def start(message):
+    config.newReagentAddition = False
+    config.newClass = ''
+    config.newUserAddition = False
+    config.newUserRole = ''
     markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton("ВНЕСТИ", callback_data='pushReag')
     btn2 = types.InlineKeyboardButton('СПИСАТЬ/ВСКРЫТЬ', callback_data='pullReag')
@@ -69,6 +91,10 @@ def start(message):
 
 @bot.message_handler(func=lambda message: hashUser(message.from_user.id) in users, commands=['help'])
 def help(message):
+    config.newReagentAddition = False
+    config.newClass = ''
+    config.newUserAddition = False
+    config.newUserRole = ''
     bot.send_message(message.from_user.id, "в боковом меню основные команды, в основном сейчас бот заполняет или списывает реагентику, не надо с ним общаться, делайте все кнопками.")
     
 @bot.callback_query_handler(func=lambda call:True)
@@ -76,6 +102,10 @@ def callback_worker(call):
 
     #general block
     if call.data == 'globalStart':
+        config.newReagentAddition = False
+        config.newClass = ''
+        config.newUserAddition = False
+        config.newUserRole = ''
         markup = types.InlineKeyboardMarkup()
         btn1 = types.InlineKeyboardButton("ВНЕСТИ", callback_data='pushReag')
         btn2 = types.InlineKeyboardButton("СПИСАТЬ/ВСКРЫТЬ", callback_data='pullReag')
@@ -149,10 +179,14 @@ def callback_worker(call):
     elif call.data == 'newUser':
         config.newUserRole = 'user'
         bot.send_message(call.message.chat.id, "Введите данные пользователя в формате userID, имя_пользователя ЧЕРЕЗ ЗАПЯТУЮ")
+    
     elif call.data == 'newAdmin':
         config.newUserRole = 'admin'
         bot.send_message(call.message.chat.id, "Введите данные пользователя в формате userID, имя_пользователя ЧЕРЕЗ ЗАПЯТУЮ")
-
+    
+    elif call.data.startswith('newClassInstance'):
+        config.newClass = call.data.split('|')[1]
+        bot.send_message(call.message.chat.id, f"Введите название нового реагента из класса {config.newClass}, лучше делать его коротким, чтобы оно влезало на кнопки")
     else:
         try:
             handleRequest(call.data, connection)
@@ -168,9 +202,17 @@ def message_reply(message):
     if config.newUserAddition:
         print(message.text)
         name = message.text.split(',')[1].strip()
-        userID = hashUser(message.text.split(',')[0].strip())
+        userID = hashUser(int(message.text.split(',')[0].strip()))
         addUser(connection, userID, name, config.newUserRole)
+        bot.send_message(message.from_user.id, f'Новый пользователь {name} внесен с правами {config.newUserRole}')
         config.newUserAddition = False
         config.newUserRole = ''
+
+    elif config.newReagentAddition and config.newClass != '':
+        reagentName = message.text.strip()
+        createNewDBinstance(connection, reagentName, config.newClass)
+        bot.send_message(message.from_user.id, f'Новый реагент {reagentName} внесен как новый объект класса {config.newClass}')
+        config.newReagentAddition = False
+        config.newClass = ''
 
 bot.polling(none_stop=True, interval=0)

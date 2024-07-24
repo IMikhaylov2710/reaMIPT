@@ -23,9 +23,9 @@ def handleRequest(callbackData, conn):
 
             elif toDo == 'pull':
                 sql = """UPDATE reagents SET quantity = quantity - 1 
-                        WHERE name = '%s'
-                        """ % row[0]
-                cur.execute(sql)
+                        WHERE name = (?)
+                        """
+                cur.execute(sql, (row[0], ))
                 conn.commit()
 
         else:
@@ -38,8 +38,8 @@ def handleRequestInfo(callbackData, conn):
     hash = callDataSplit[1]
     with conn:
         cur = conn.cursor()
-        sqlResult = """SELECT * FROM reagents INNER JOIN aliases on reagents.name = aliases.name WHERE alias = '%s'""" % hash
-        cur.execute(sqlResult)
+        sqlResult = """SELECT * FROM reagents INNER JOIN aliases on reagents.name = aliases.name WHERE alias = (?)"""
+        cur.execute(sqlResult, (hash,))
         row = cur.fetchall()
 
     return row
@@ -65,26 +65,22 @@ def getQuantityByClass(conn, classForFetch):
 def createNewAlias(name, conn):
 
     cur = conn.cursor()
-    cur.execute("""SELECT * FROM aliases WHERE name =?""", name)
-    row = cur.fetchone()
-    if row:
+    '''cur.execute("""SELECT * FROM aliases WHERE name = (?) """, (name,))
+    row = cur.fetchone()'''
+    m = hashlib.sha256(name).hexdigest()[:16]
+    sql = """INSERT INTO aliases(name,alias)
+            VALUES(?,?)"""
+    cur = conn.cursor()
+    cur.execute(sql, (name, m))
+    conn.commit()
 
-        return cur.lastowid
-    else:
-        m = hashlib.sha256(name).hexdigest()
-        sql = """INSERT INTO aliases(name,alias)
-              VALUES(?,?)"""
-        cur = conn.cursor()
-        cur.execute(sql, (name, m))
-        conn.commit()
-
-        return cur.lastrowid
+    return cur.lastrowid
 
 def getItemsByClass(className, conn):
     with conn:
         cur = conn.cursor()
-        sql = "select name, alias from aliases where class='%s'" % className
-        cur.execute(sql) 
+        sql = """select name, alias from aliases where class=(?)"""
+        cur.execute(sql, (className, )) 
         row = cur.fetchall()
 
     return row
@@ -105,7 +101,7 @@ def addUser(conn, userID, name, role):
         cur = conn.cursor()
         sql = """INSERT INTO users VALUES (?, ?, ?)"""
         cur.execute(sql, (name, hash, role))
-    conn.commit()
+        conn.commit()
 
 def removeUser(conn, name):
 
@@ -113,4 +109,17 @@ def removeUser(conn, name):
         cur = conn.cursor()
         sql = """DELETE FROM users WHERE name = (?)"""
         cur.execute(sql, name)
-    conn.commit()
+        conn.commit()
+
+def createNewDBinstance(conn, name, className):
+    with conn:
+        cur = conn.cursor()
+        hash = hashlib.sha256(str(name).encode('utf-8')).hexdigest()
+        sql = """INSERT INTO aliases VALUES (?, ?, ?)"""
+        cur.execute(sql, (name, hash, className))
+
+        sql2 = """INSERT INTO reagents VALUES (?, ?)"""
+        cur.execute(sql2, (name, 0))
+
+        conn.commit()
+
