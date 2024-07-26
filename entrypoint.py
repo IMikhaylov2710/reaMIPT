@@ -1,12 +1,11 @@
 import telebot
 from telebot import types
 import sqlite3
-import hashlib
 import config
-from DB.dbLogic import handleRequest, createNewAlias, getItemsByClass, getClasses, handleRequestInfo, getUsers, addUser, createNewDBinstance
+from DB.dbLogic import handleRequest, getItemsByClass, getClasses, handleRequestInfo, getUsers, addUser, createNewDBinstance
 from helpers.sequrityLogic import hashUser
 
-bot = telebot.TeleBot('7016692600:AAEjyXhtwlfiXleml-yGCqvw3UHfnQTACtM')
+bot = telebot.TeleBot('')
     
 bot.approve_chat_join_request
 
