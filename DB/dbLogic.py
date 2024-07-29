@@ -4,6 +4,20 @@ def hashUser(userID):
     hash = hashlib.sha256(str(userID).encode('utf-8')).hexdigest()
     return hash
 
+def getOrganizationByUser(conn, userID):
+    hash = hashlib.sha256(str(userID).encode('utf-8')).hexdigest()
+    with conn:
+        cur = conn.cursor()
+        sql = """SELECT organizations.organizationName FROM users INNER JOIN organizations ON organizations.organizationID = users.organizationID WHERE userHash = (?);"""
+        cur.execute(sql, (hash, ))
+        row = cur.fetchone()
+
+    return row
+
+def getAllUsersOfOrganization(conn, userID):
+    return print('this will return all users from your organization')
+
+#refactoring
 def handleRequest(callbackData, conn):
 
     with conn:
@@ -11,7 +25,7 @@ def handleRequest(callbackData, conn):
         hash = callDataSplit[1]
         toDo = callDataSplit[0]
         cur = conn.cursor()
-        cur.execute("""select * from aliases where alias = ?""", (hash, ))
+        cur.execute("""select * from reagents where alias = ?""", (hash, ))
         row = cur.fetchone()
         if row:
             if toDo == 'push':
@@ -31,7 +45,8 @@ def handleRequest(callbackData, conn):
         else:
 
             return 'Этого реагента пока нет в базе'
-        
+
+#refactoring   
 def handleRequestInfo(callbackData, conn):
 
     callDataSplit = callbackData.split('|')
@@ -47,16 +62,17 @@ def handleRequestInfo(callbackData, conn):
 def getClasses(conn):
 
     cur = conn.cursor()
-    sql = """SELECT DISTINCT class FROM aliases"""
+    sql = """SELECT DISTINCT classID FROM classes"""
     cur.execute(sql)
     row = cur.fetchall()
 
     return row
 
+#minor refactoring
 def getQuantityByClass(conn, classForFetch):
 
     cur = conn.cursor()
-    sql = """SELECT * FROM aliases WHERE class = (?)"""
+    sql = """SELECT name, quantity FROM reagents WHERE class = (?)"""
     cur.execute(sql, classForFetch)
     row = cur.fetchall()
 
@@ -76,6 +92,7 @@ def createNewAlias(name, conn):
 
     return cur.lastrowid
 
+#refactoring
 def getItemsByClass(conn, className):
     with conn:
         cur = conn.cursor()
@@ -83,7 +100,7 @@ def getItemsByClass(conn, className):
         cur.execute(sql, (className, )) 
         row = cur.fetchall()
         result = '\n'.join([str(el[0])+'\t'+str(el[1]) for el in row])
-        
+
     return result
 
 def getUsers(conn):
@@ -112,6 +129,7 @@ def removeUser(conn, name):
         cur.execute(sql, name)
         conn.commit()
 
+#refactoring
 def createNewDBinstance(conn, name, className):
 
     with conn:
@@ -124,4 +142,3 @@ def createNewDBinstance(conn, name, className):
         cur.execute(sql2, (name, 0))
 
         conn.commit()
-

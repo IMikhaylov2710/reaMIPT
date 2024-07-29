@@ -2,10 +2,19 @@ import telebot
 from telebot import types
 import sqlite3
 import config
+import sys
+import argparse
 from DB.dbLogic import handleRequest, getItemsByClass, getClasses, handleRequestInfo, getUsers, addUser, createNewDBinstance
 from helpers.sequrityLogic import hashUser, isEmoji, makeEmojiFromText, makeTextFromEmoji
 
-bot = telebot.TeleBot('')
+parser = argparse.ArgumentParser(description='Bot for reagents accounting', epilog='OMNIGENE LLC, All rights reserved 2024')
+parser.add_argument("-API", "--APICode", help = "API code for this bot")
+args = parser.parse_args()
+
+if args.APICode:
+    bot = telebot.TeleBot(args.APICode)
+else:
+    sys.exit()
     
 bot.approve_chat_join_request
 
