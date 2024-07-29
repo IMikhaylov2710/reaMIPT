@@ -1,6 +1,5 @@
 import sqlite3
 import hashlib
-import pandas as pd
 import sys
 
 conn = sqlite3.connect('DB/mipt.db')
@@ -45,7 +44,8 @@ else:
 
         sqlSetup1 = """CREATE TABLE IF NOT EXISTS organizations(
         organizationName text not null, 
-        organizationID text not null unique);"""
+        organizationID text not null unique);
+        """
 
         sqlSetup2 = """CREATE TABLE IF NOT EXISTS classes(
         className text not null, 
@@ -59,7 +59,8 @@ else:
         userHash text not null unique, 
         userRights text not null,
         organizationID text not null,
-        FOREIGN KEY(organizationID) REFERENCES organizations(organizationID));"""
+        FOREIGN KEY(organizationID) REFERENCES organizations(organizationID));
+        """
 
         sqlSetup4 = """CREATE TABLE IF NOT EXISTS reagents(
         name text unique not null, 
@@ -68,7 +69,8 @@ else:
         classID text not null, 
         organizationID text not null,
         FOREIGN KEY(classID) REFERENCES classes(classID),
-        FOREIGN KEY(organizationID) REFERENCES organizations(organizationID));"""
+        FOREIGN KEY(organizationID) REFERENCES organizations(organizationID));
+        """
 
         cur.execute(sqlSetup1)
         cur.execute(sqlSetup2)

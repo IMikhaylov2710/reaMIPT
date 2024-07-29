@@ -103,13 +103,23 @@ def getItemsByClass(conn, className):
 
     return result
 
-def getUsers(conn):
+def getMyOrganization(conn, userID):
     with conn:
         cur = conn.cursor()
-        sql = """select * from users"""
+        sql = """SELECT organizationID FROM users WHERE userHash = (?)"""
+        cur.execute(sql, (hashUser(userID)))
+        row = cur.fetchall()
+        print(row)
+
+    return row
+
+def getUsers(conn, organization):
+    with conn:
+        cur = conn.cursor()
+        sql = """SELECT * from USERS where organizationID = (?)"""
         cur.execute(sql)
         row = cur.fetchall()
-
+        print(row)
     return row
 
 def addUser(conn, userID, name, role):
