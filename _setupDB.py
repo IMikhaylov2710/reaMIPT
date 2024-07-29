@@ -40,6 +40,7 @@ except:
     userHash text not null, 
     userRights text not null
     )"""
+    
     cur.execute(sqlSetup1)
     cur.execute(sqlSetup2)
     cur.execute(sqlSetup3)

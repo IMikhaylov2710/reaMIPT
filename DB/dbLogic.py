@@ -76,14 +76,15 @@ def createNewAlias(name, conn):
 
     return cur.lastrowid
 
-def getItemsByClass(className, conn):
+def getItemsByClass(conn, className):
     with conn:
         cur = conn.cursor()
-        sql = """select name, alias from aliases where class=(?)"""
+        sql = """select reagents.name, reagents.quantity from aliases inner join reagents on reagents.name = aliases.name where class=(?)"""
         cur.execute(sql, (className, )) 
         row = cur.fetchall()
-
-    return row
+        result = '\n'.join([str(el[0])+'\t'+str(el[1]) for el in row])
+        
+    return result
 
 def getUsers(conn):
     with conn:
@@ -112,9 +113,10 @@ def removeUser(conn, name):
         conn.commit()
 
 def createNewDBinstance(conn, name, className):
+
     with conn:
         cur = conn.cursor()
-        hash = hashlib.sha256(str(name).encode('utf-8')).hexdigest()
+        hash = hashlib.sha256(str(name).encode('utf-8')).hexdigest()[:16]
         sql = """INSERT INTO aliases VALUES (?, ?, ?)"""
         cur.execute(sql, (name, hash, className))
 

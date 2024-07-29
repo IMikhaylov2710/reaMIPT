@@ -3,7 +3,7 @@ from telebot import types
 import sqlite3
 import config
 from DB.dbLogic import handleRequest, getItemsByClass, getClasses, handleRequestInfo, getUsers, addUser, createNewDBinstance
-from helpers.sequrityLogic import hashUser
+from helpers.sequrityLogic import hashUser, isEmoji, makeEmojiFromText, makeTextFromEmoji
 
 bot = telebot.TeleBot('')
     
@@ -61,7 +61,7 @@ def start(message):
     markup.add(btn1)
     bot.send_message(message.from_user.id, "Привет! Я - бот для учета реактивов. Не забывайте мной пользоваться, чтобы вносить и списывать реагенты.", reply_markup=markup)
 
-@bot.message_handler(func=lambda message: hashUser(message.from_user.id) in users, commands=['add'])
+@bot.message_handler(func=lambda message: hashUser(message.from_user.id) in users or hashUser(message.from_user.id) in admins, commands=['add'])
 def start(message):
     config.newReagentAddition = False
     config.newClass = ''
@@ -152,7 +152,8 @@ def callback_worker(call):
         currentClass = 'cleanup'
         items = getItemsByClass(currentClass, connection)
         for item in items:
-            button = types.InlineKeyboardButton(str(item[0]).rstrip(), callback_data='pull|'+item[1])
+            print(str(item[0]))
+            button = types.InlineKeyboardButton(str(item[0]), callback_data='pull|'+item[1])
             markup.add(button)
         markup.add(types.InlineKeyboardButton("в начало >", callback_data='globalStart'))
         bot.send_message(call.message.chat.id, "Внести набор для выделения, чтобы списать один", reply_markup=markup)
@@ -162,7 +163,8 @@ def callback_worker(call):
         currentClass = 'NGS'
         items = getItemsByClass(currentClass, connection)
         for item in items:
-            button = types.InlineKeyboardButton(str(item[0]).rstrip(), callback_data='pull|'+item[1])
+            print(str(item[0]))
+            button = types.InlineKeyboardButton(str(item[0]), callback_data='pull|'+item[1])
             markup.add(button)
         markup.add(types.InlineKeyboardButton("в начало >", callback_data='globalStart'))
         bot.send_message(call.message.chat.id, "Выберите набор для NGS, чтобы списать", reply_markup=markup)
@@ -186,6 +188,12 @@ def callback_worker(call):
     elif call.data.startswith('newClassInstance'):
         config.newClass = call.data.split('|')[1]
         bot.send_message(call.message.chat.id, f"Введите название нового реагента из класса {config.newClass}, лучше делать его коротким, чтобы оно влезало на кнопки")
+    
+    elif call.data.startswith('info|'):
+        classOfInterest = call.data.split('|')[1]
+        items = getItemsByClass(connection, classOfInterest)
+        bot.send_message(call.message.chat.id, str(items))
+    
     else:
         try:
             handleRequest(call.data, connection)
@@ -198,10 +206,10 @@ def callback_worker(call):
 
 @bot.message_handler(content_types="text")
 def message_reply(message):
+
     if config.newUserAddition:
-        print(message.text)
         name = message.text.split(',')[1].strip()
-        userID = hashUser(int(message.text.split(',')[0].strip()))
+        userID = (message.text.split(',')[0].strip())
         addUser(connection, userID, name, config.newUserRole)
         bot.send_message(message.from_user.id, f'Новый пользователь {name} внесен с правами {config.newUserRole}')
         config.newUserAddition = False
@@ -209,9 +217,18 @@ def message_reply(message):
 
     elif config.newReagentAddition and config.newClass != '':
         reagentName = message.text.strip()
-        createNewDBinstance(connection, reagentName, config.newClass)
+        createNewDBinstance(connection, str(reagentName), config.newClass)
+        print(str(reagentName))
         bot.send_message(message.from_user.id, f'Новый реагент {reagentName} внесен как новый объект класса {config.newClass}')
         config.newReagentAddition = False
         config.newClass = ''
+
+    elif message.text.startswith('!sendSticker!'):
+        bot.send_sticker(message.from_user.id, "CAACAgIAAxkBAAEs3Vdmp4lIMkhUbkzkCmJ3mX5K6JbmuAACvwkAAipVGAK2fQJmNssIrzUE",)
+
+    else:
+        bot.send_message(message.from_user.id, 'С этим ботом нет смысла общаться, он вас не понимает, \
+                         используйте кнопку /start из меню, а дальше пользуйтесь кнопками. \
+                         Если бот захочет, чтобы вы что-то написали - он вам скажет')
 
 bot.polling(none_stop=True, interval=0)
