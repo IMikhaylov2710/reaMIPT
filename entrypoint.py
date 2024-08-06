@@ -37,7 +37,7 @@ print(users, admins, userDic)
 
 @bot.message_handler(func=lambda message: hashUser(message.from_user.id) not in users)
 def goAway(message):
-    bot.send_message(message.from_user.id, f'Нет доступа {hashUser(message.from_user.id)}')
+    bot.send_message(message.from_user.id, f'Нет доступа, введите ссылку-приглашение, которую вам отправил админ организации')
 
 @bot.message_handler(func=lambda message: hashUser(message.from_user.id) not in admins, commands=['admin'])
 def admin(message):
