@@ -18,29 +18,28 @@ def getAllUsersOfOrganization(conn, userID):
     return print('this will return all users from your organization')
 
 #refactoring
-def handleRequest(callbackData, conn):
+def handleRequest(callbackData, conn, organizationID):
 
     with conn:
         callDataSplit = callbackData.split('|')
         hash = callDataSplit[1]
         toDo = callDataSplit[0]
         cur = conn.cursor()
-        cur.execute("""select * from reagents where alias = ?""", (hash, ))
-        row = cur.fetchone()
-        if row:
-            if toDo == 'push':
-                sql = """INSERT INTO reagents VALUES (?, ?)
-                ON CONFLICT(name) DO UPDATE
-                SET quantity = quantity + 1"""
-                cur.execute(sql, (row[0], 1))
-                conn.commit()
+        if toDo == 'push':
+            sql = """UPDATE reagents SET quantity = quantity + 1 
+                    WHERE reagentID = (?)
+                    AND organizationID = (?)
+                    """
+            cur.execute(sql, (hash, organizationID))
+            conn.commit()
 
-            elif toDo == 'pull':
-                sql = """UPDATE reagents SET quantity = quantity - 1 
-                        WHERE name = (?)
-                        """
-                cur.execute(sql, (row[0], ))
-                conn.commit()
+        elif toDo == 'pull':
+            sql = """UPDATE reagents SET quantity = quantity - 1 
+                    WHERE reagentID = (?)
+                    AND organizationID = (?)
+                    """
+            cur.execute(sql, (hash, organizationID))
+            conn.commit()
 
         else:
 
@@ -152,3 +151,35 @@ def createNewDBinstance(conn, name, className):
         cur.execute(sql2, (name, 0))
 
         conn.commit()
+
+def checkInvitationLink(conn, link, userID):
+
+    with conn:
+        cur = conn.cursor()
+        hash = hashUser(userID)
+
+        sql = """SELECT EXISTS(SELECT * FROM quotes WHERE welcomeLink=(?))"""
+        cur.execute(sql, (link, ))
+
+        result = cur.fetchone()
+
+        if result[0] == 1:
+            return True
+        else:
+            return False
+        
+def checkUserValidity(conn, userID):
+
+    with conn:
+        cur = conn.cursor()
+        hash = hashUser(userID)
+
+        sql = """SELECT EXISTS(SELECT * FROM users WHERE userID=(?))"""
+        cur.execute(sql, (hash, ))
+
+        result = cur.fetchone()[0]
+
+        if result == 1:
+            return True
+        else:
+            return False
