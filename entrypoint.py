@@ -7,6 +7,10 @@ import redis
 from DB.dbLogic import handleRequest, getItemsByClass, getClasses, handleRequestInfo, addUser, createNewDBinstance, getMyOrganization, checkInvitationLink, checkUserValidity, checkAdminRights
 from helpers.sequrityLogic import hashUser
 
+####KEY EXPIRATION####
+'''r.set('my_key', 'my_value')
+r.expire('my_key', 120) '''
+
 parser = argparse.ArgumentParser(description='Bot for reagents accounting', epilog='OMNIGENE LLC, All rights reserved 2024')
 parser.add_argument("-API", "--APICode", help = "API code for this bot")
 args = parser.parse_args()
@@ -18,7 +22,6 @@ else:
     sys.exit()
     
 bot.approve_chat_join_request
-
 connection = sqlite3.connect('DB/mipt.db', check_same_thread=False)
 redis_db = redis.StrictRedis(host='localhost', port=6379, db=0)
 
@@ -52,6 +55,15 @@ def start(message):
     
     #flushing this user's state
     hashedID = hashUser(message.from_user.id)
+
+    #new version of state
+    '''redis_db.hset(f'user_{message.from_user.id}', state={'newReagentAddition': 0, 
+                                                            'newClass': '', 
+                                                            'newUserAddition': 0, 
+                                                            'newUserRole': ''
+                                                            })
+    redis_db.expire(f'user_{message.from_user.id}', 600)'''
+
     redis_db.set(f'newReagentAddition_{hashedID}', 0)
     redis_db.set(f'newClass_{hashedID}', '')
     redis_db.set(f'newUserAddition_{hashedID}', 0)
@@ -66,9 +78,8 @@ def start(message):
 @bot.message_handler(func=lambda message: checkUserValidity(connection, message.from_user.id) == 1, commands=['add'])
 def start(message):
 
-    #flushing this user's state
+    #making this user's state default
     hashedID = hashUser(message.from_user.id)
-    redis_db.set(f'newReagentAddition_{hashedID}', 0)
     redis_db.set(f'newClass_{hashedID}', '')
     redis_db.set(f'newUserAddition_{hashedID}', 0)
     redis_db.set(f'newUserRole_{hashedID}', '')
@@ -294,6 +305,7 @@ def message_reply(message):
                 bot.send_message(message.from_user.id, str(res))
             except:
                 bot.send_message(message.from_user.id, 'SQL select was unsuccessfull')
+
     else:
         if checkInvitationLink(connection, message.text, message.from_user.id):
             bot.send_message(message.from_user.id, 'Новый пользователь успешно зарегистрирован')
@@ -301,5 +313,5 @@ def message_reply(message):
             bot.send_message(message.from_user.id, 'С этим ботом нет смысла общаться, он вас не понимает, используйте кнопку /start из меню, а дальше пользуйтесь кнопками. Если бот захочет, чтобы вы что-то написали - он вам скажет.')
         else:
             bot.send_message(message.from_user.id, 'Приглашение не найдено, проверьте правильность введения ссылки-приглашения')
-
+    
 bot.polling(none_stop=True, interval=0)
