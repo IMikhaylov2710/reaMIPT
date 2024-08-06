@@ -4,7 +4,7 @@ import sqlite3
 import sys
 import argparse
 import redis
-from DB.dbLogic import handleRequest, getItemsByClass, getClasses, handleRequestInfo, getUsers, addUser, createNewDBinstance, getMyOrganization, checkInvitationLink, checkUserValidity
+from DB.dbLogic import handleRequest, getItemsByClass, getClasses, handleRequestInfo, addUser, createNewDBinstance, getMyOrganization, checkInvitationLink, checkUserValidity, checkAdminRights
 from helpers.sequrityLogic import hashUser
 
 parser = argparse.ArgumentParser(description='Bot for reagents accounting', epilog='OMNIGENE LLC, All rights reserved 2024')
@@ -22,12 +22,12 @@ bot.approve_chat_join_request
 connection = sqlite3.connect('DB/mipt.db', check_same_thread=False)
 redis_db = redis.StrictRedis(host='localhost', port=6379, db=0)
 
-@bot.message_handler(func=lambda message: hashUser(message.from_user.id) not in admins, commands=['admin'])
+@bot.message_handler(func=lambda message: checkAdminRights(connection, message.from_user.id) == 'admin', commands=['admin'])
 def admin(message):
 
     bot.send_message(message.from_user.id, 'У вас нет админских прав')
 
-@bot.message_handler(func=lambda message: hashUser(message.from_user.id) in admins, commands=['admin'])
+@bot.message_handler(func=lambda message: checkAdminRights(connection, message.from_user.id) == 'admin', commands=['admin'])
 def admin(message):
 
     markup = types.InlineKeyboardMarkup()
@@ -36,7 +36,7 @@ def admin(message):
 
     bot.send_message(message.from_user.id, "Админ", reply_markup=markup)
 
-@bot.message_handler(func=lambda message: checkUserValidity(connection, message.from_user.id), commands=['statistics'])
+@bot.message_handler(func=lambda message: checkUserValidity(connection, message.from_user.id) == 1, commands=['statistics'])
 def stat(message):
 
     classes = getClasses(connection)
@@ -63,7 +63,7 @@ def start(message):
 
     bot.send_message(message.from_user.id, "Привет! Я - бот для учета реактивов. Не забывайте мной пользоваться, чтобы вносить и списывать реагенты.", reply_markup=markup)
 
-@bot.message_handler(func=lambda message: hashUser(message.from_user.id) in users or hashUser(message.from_user.id) in admins, commands=['add'])
+@bot.message_handler(func=lambda message: checkUserValidity(connection, message.from_user.id) == 1, commands=['add'])
 def start(message):
 
     #flushing this user's state
@@ -90,7 +90,7 @@ def start(message):
 
     bot.send_message(message.from_user.id, "Выберите название класса, к которому будет относиться новый реагент", reply_markup=markup)
     
-@bot.message_handler(func=lambda message: hashUser(message.from_user.id) in users, commands=['new'])
+@bot.message_handler(func=lambda message: checkUserValidity(connection, message.from_user.id) == 1, commands=['new'])
 def start(message):
 
     #flushing this user's state
@@ -108,7 +108,7 @@ def start(message):
     bot.send_message(message.chat.id, "Внести новые реактивы / Списать реактивы", reply_markup=markup)
     
 
-@bot.message_handler(func=lambda message: hashUser(message.from_user.id) in users, commands=['help'])
+@bot.message_handler(func=lambda message: checkUserValidity(connection, message.from_user.id) == 1, commands=['help'])
 def help(message):
 
     #flushing this user's state
@@ -254,7 +254,7 @@ def callback_worker(call):
             res = handleRequestInfo(call.data, connection)
             #for user in usersDic:
                 #bot.send_message(user, f'Пользователь {userDic[hashUser(call.message.chat.id)]} что-то сделал с реагентом {str(res[0][0])}, в наличии {str(res[0][1])}') 
-            bot.send_message(call.message.chat.id, f'Пользователь {userDic[hashUser(call.message.chat.id)]} что-то сделал с реагентом {str(res[0][0])}, в наличии {str(res[0][1])}')
+            #bot.send_message(call.message.chat.id, f'Пользователь {userDic[hashUser(call.message.chat.id)]} что-то сделал с реагентом {str(res[0][0])}, в наличии {str(res[0][1])}')
         except:
             bot.send_message(call.message.chat.id, 'Что-то серьезно сломалось, пишите @bochonni')
 
@@ -297,7 +297,7 @@ def message_reply(message):
     else:
         if checkInvitationLink(connection, message.text, message.from_user.id):
             bot.send_message(message.from_user.id, 'Новый пользователь успешно зарегистрирован')
-        elif hashUser(message.from_user.id) in users:
+        elif checkUserValidity(connection, message.from_user.id) == 1:
             bot.send_message(message.from_user.id, 'С этим ботом нет смысла общаться, он вас не понимает, используйте кнопку /start из меню, а дальше пользуйтесь кнопками. Если бот захочет, чтобы вы что-то написали - он вам скажет.')
         else:
             bot.send_message(message.from_user.id, 'Приглашение не найдено, проверьте правильность введения ссылки-приглашения')

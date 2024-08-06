@@ -183,3 +183,31 @@ def checkUserValidity(conn, userID):
             return True
         else:
             return False
+        
+def checkAdminRights(conn, userID):
+
+    hash = hashUser(userID)
+
+    with conn:
+
+        cur = conn.cursor()
+        sql = """SELECT EXISTS(SELECT * FROM users WHERE userID=(?))"""
+        cur.execute(sql, (hash, ))
+        result = cur.fetchone()[0]
+        print(sql, hash, result)
+
+        if result == 1:
+            sql2 = """SELECT userRights FROM users WHERE userID = (?)"""
+            cur.execute(sql2, (hash, ))
+            print(sql2, hash)
+
+            result = cur.fetchone()[0]
+            print(result)
+            if result == 'admin':
+                return 'admin'
+            elif result == 'user':
+                return 'user'
+            else:
+                return 'none'
+        else:
+            return 'none'
