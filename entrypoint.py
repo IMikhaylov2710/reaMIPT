@@ -7,10 +7,6 @@ import redis
 from DB.dbLogic import handleRequest, getItemsByClass, getClasses, handleRequestInfo, addUser, createNewDBinstance, getMyOrganization, checkInvitationLink, checkUserValidity, checkAdminRights
 from helpers.sequrityLogic import hashUser
 
-####KEY EXPIRATION####
-'''r.set('my_key', 'my_value')
-r.expire('my_key', 120) '''
-
 parser = argparse.ArgumentParser(description='Bot for reagents accounting', epilog='OMNIGENE LLC, All rights reserved 2024')
 parser.add_argument("-API", "--APICode", help = "API code for this bot")
 args = parser.parse_args()
@@ -53,21 +49,15 @@ def stat(message):
 @bot.message_handler(func=lambda message: checkUserValidity(connection, message.from_user.id) == 1, commands=['start'])
 def start(message):
     
-    #flushing this user's state
     hashedID = hashUser(message.from_user.id)
 
-    #new version of state
-    '''redis_db.hset(f'user_{message.from_user.id}', state={'newReagentAddition': 0, 
+    #new version of state flushing
+    redis_db.hset(f'user_{hashedID}', mapping={'newReagentAddition': 0, 
                                                             'newClass': '', 
                                                             'newUserAddition': 0, 
                                                             'newUserRole': ''
                                                             })
-    redis_db.expire(f'user_{message.from_user.id}', 600)'''
-
-    redis_db.set(f'newReagentAddition_{hashedID}', 0)
-    redis_db.set(f'newClass_{hashedID}', '')
-    redis_db.set(f'newUserAddition_{hashedID}', 0)
-    redis_db.set(f'newUserRole_{hashedID}', '')
+    redis_db.expire(f'user_{hashedID}', 600)
 
     markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton("Go", callback_data = 'globalStart')
@@ -78,20 +68,17 @@ def start(message):
 @bot.message_handler(func=lambda message: checkUserValidity(connection, message.from_user.id) == 1, commands=['add'])
 def start(message):
 
-    #making this user's state default
     hashedID = hashUser(message.from_user.id)
-    redis_db.set(f'newClass_{hashedID}', '')
-    redis_db.set(f'newUserAddition_{hashedID}', 0)
-    redis_db.set(f'newUserRole_{hashedID}', '')
-    
-    redis_db.set(f'newReagentAddition_{hashUser(message.from_user.id)}', 1)
 
-    #legacy
-    '''config.newReagentAddition = False
-    config.newClass = ''
-    config.newUserAddition = False
-    config.newUserRole = ''
-    config.newReagentAddition = True'''
+    #new version of state flushing
+    redis_db.hset(f'user_{hashedID}', mapping={'newReagentAddition': 0, 
+                                                'newClass': '', 
+                                                'newUserAddition': 0, 
+                                                'newUserRole': ''
+                                                })
+    redis_db.expire(f'user_{hashedID}', 600)
+    
+    redis_db.hset(f'user_{hashedID}', 'newRegentAddition', 1)
 
     classes = getClasses(connection)
     markup = types.InlineKeyboardMarkup()
@@ -104,12 +91,15 @@ def start(message):
 @bot.message_handler(func=lambda message: checkUserValidity(connection, message.from_user.id) == 1, commands=['new'])
 def start(message):
 
-    #flushing this user's state
     hashedID = hashUser(message.from_user.id)
-    redis_db.set(f'newReagentAddition_{hashedID}', 0)
-    redis_db.set(f'newClass_{hashedID}', '')
-    redis_db.set(f'newUserAddition_{hashedID}', 0)
-    redis_db.set(f'newUserRole_{hashedID}', '')
+
+    #new version of state flushing
+    redis_db.hset(f'user_{hashedID}', mapping={'newReagentAddition': 0, 
+                                                'newClass': '', 
+                                                'newUserAddition': 0, 
+                                                'newUserRole': ''
+                                                })
+    redis_db.expire(f'user_{hashedID}', 600)
 
     markup = types.InlineKeyboardMarkup()
     btn1 = types.InlineKeyboardButton("ВНЕСТИ", callback_data='pushReag')
@@ -122,12 +112,16 @@ def start(message):
 @bot.message_handler(func=lambda message: checkUserValidity(connection, message.from_user.id) == 1, commands=['help'])
 def help(message):
 
-    #flushing this user's state
     hashedID = hashUser(message.from_user.id)
-    redis_db.set(f'newReagentAddition_{hashedID}', 0)
-    redis_db.set(f'newClass_{hashedID}', '')
-    redis_db.set(f'newUserAddition_{hashedID}', 0)
-    redis_db.set(f'newUserRole_{hashedID}', '')
+
+    #new version of state flushing
+    redis_db.hset(f'user_{hashedID}', mapping={'newReagentAddition': 0, 
+                                                'newClass': '', 
+                                                'newUserAddition': 0, 
+                                                'newUserRole': ''
+                                                })
+    redis_db.expire(f'user_{hashedID}', 600)
+
 
     bot.send_message(message.from_user.id, "в боковом меню основные команды, в основном сейчас бот заполняет или списывает реагентику, не надо с ним общаться, делайте все кнопками.")
     
@@ -137,12 +131,16 @@ def callback_worker(call):
     #general block
     if call.data == 'globalStart':
 
-        #flushing this user's state
         hashedID = hashUser(call.message.chat.id)
-        redis_db.set(f'newReagentAddition_{hashedID}', 0)
-        redis_db.set(f'newClass_{hashedID}', '')
-        redis_db.set(f'newUserAddition_{hashedID}', 0)
-        redis_db.set(f'newUserRole_{hashedID}', '')
+
+        #new version of state flushing
+        redis_db.hset(f'user_{hashedID}', mapping={'newReagentAddition': 0, 
+                                                    'newClass': '', 
+                                                    'newUserAddition': 0, 
+                                                    'newUserRole': ''
+                                                    })
+        redis_db.expire(f'user_{hashedID}', 600)
+
 
         markup = types.InlineKeyboardMarkup()
         btn1 = types.InlineKeyboardButton("ВНЕСТИ", callback_data='pushReag')
@@ -151,81 +149,65 @@ def callback_worker(call):
 
         bot.send_message(call.message.chat.id, "Внести новые реактивы / Списать реактивы", reply_markup=markup)
 
+    #general block for push/pull logic 
     elif call.data == 'pushReag':
 
         markup = types.InlineKeyboardMarkup()
-        btn1 = types.InlineKeyboardButton("Выделение", callback_data='pushCleanup')
-        btn2 = types.InlineKeyboardButton("NGS", callback_data='pushNGS')
-        markup.add(btn1, btn2)
+        items = getClasses(connection, call.message.chat.id)
+        for item in items:
+            button = types.InlineKeyboardButton(str(item[0]).rstrip(), callback_data='push|'+item[1])
+            markup.add(button)
         markup.add(types.InlineKeyboardButton("в начало >", callback_data='globalStart'))
 
         bot.send_message(call.message.chat.id, "Внести реактивы", reply_markup=markup)
-    
-    elif call.data == 'pushCleanup':
-
-        markup = types.InlineKeyboardMarkup()
-        currentClass = 'cleanup'
-        items = getItemsByClass(currentClass, connection)
-
-        for item in items:
-            button = types.InlineKeyboardButton(str(item[0]).rstrip(), callback_data='push|'+item[1])
-            markup.add(button)
-        markup.add(types.InlineKeyboardButton("в начало >", callback_data='globalStart'))
-
-        bot.send_message(call.message.chat.id, "Внести набор для выделения, чтобы внести один в базу", reply_markup=markup)
-
-    elif call.data == 'pushNGS':
-
-        markup = types.InlineKeyboardMarkup()
-        currentClass = 'NGS'
-        items = getItemsByClass(currentClass, connection)
-        for item in items:
-            button = types.InlineKeyboardButton(str(item[0]).rstrip(), callback_data='push|'+item[1])
-            markup.add(button)
-        markup.add(types.InlineKeyboardButton("в начало >", callback_data='globalStart'))
-
-        bot.send_message(call.message.chat.id, "Выберите набор для NGS, чтобы внести один в базу", reply_markup=markup)
 
     elif call.data == 'pullReag':
 
         markup = types.InlineKeyboardMarkup()
-        btn1 = types.InlineKeyboardButton("Выделение", callback_data='pullCleanup')
-        btn2 = types.InlineKeyboardButton("NGS", callback_data='pullNGS')
-        markup.add(btn1, btn2)
+        items = getClasses(connection, call.message.chat.id)
+        for item in items:
+            button = types.InlineKeyboardButton(str(item[0]).rstrip(), callback_data='pull|'+item[1])
+            markup.add(button)
         markup.add(types.InlineKeyboardButton("в начало >", callback_data='globalStart'))
 
         bot.send_message(call.message.chat.id, "Списать набор", reply_markup=markup)
-    
-    elif call.data == 'pullCleanup':
+    #end of general block for push/pull logic
+
+    #push by class
+    elif call.data.startswith('push|'):
 
         markup = types.InlineKeyboardMarkup()
-        currentClass = 'cleanup'
+        currentClass = call.data.split('|')[1]
         items = getItemsByClass(currentClass, connection)
+
         for item in items:
-            print(str(item[0]))
-            button = types.InlineKeyboardButton(str(item[0]), callback_data='pull|'+item[1])
+            button = types.InlineKeyboardButton(str(item[0]).rstrip(), callback_data='reapush|'+item[1])
             markup.add(button)
         markup.add(types.InlineKeyboardButton("в начало >", callback_data='globalStart'))
 
-        bot.send_message(call.message.chat.id, "Внести набор для выделения, чтобы списать один", reply_markup=markup)
+        bot.send_message(call.message.chat.id, f"Внести набор, относящийся к классу {currentClass}, чтобы внести один в базу", reply_markup=markup)
+    #end of push by class
 
-    elif call.data == 'pullNGS':
+    #pull by class
+    elif call.data.startswith('pull|'):
 
         markup = types.InlineKeyboardMarkup()
-        currentClass = 'NGS'
+        currentClass = call.data.split('|')[1]
         items = getItemsByClass(currentClass, connection)
         for item in items:
-            print(str(item[0]))
-            button = types.InlineKeyboardButton(str(item[0]), callback_data='pull|'+item[1])
+            button = types.InlineKeyboardButton(str(item[0]), callback_data='reapull|'+item[1])
             markup.add(button)
         markup.add(types.InlineKeyboardButton("в начало >", callback_data='globalStart'))
 
-        bot.send_message(call.message.chat.id, "Выберите набор для NGS, чтобы списать", reply_markup=markup)
+        bot.send_message(call.message.chat.id, f"Выберите набор, относящийся к классу {currentClass}, чтобы списать один", reply_markup=markup)
+    #end for pull by class
 
     elif call.data == 'userReg':
 
+        hashedID = hashUser(call.message.chat.id)
+
         #state for callback
-        redis_db.set(f'newUserAddition_{hashUser(call.message.chat.id)}', 1)
+        redis_db.hset(f'user_{hashedID}', 'newUserAddition', 1)
 
         markup = types.InlineKeyboardMarkup()
         btn1 = types.InlineKeyboardButton("Внести пользователя", callback_data='newUser')
@@ -236,21 +218,30 @@ def callback_worker(call):
 
     elif call.data == 'newUser':
 
-        redis_db.set(f'newUserRole_{hashUser(call.message.chat.id)}', 'user')
+        hashedID = hashUser(call.message.chat.id)
+
+        #state
+        redis_db.hset(f'user_{hashedID}', 'newUserRole', 'user')
 
         bot.send_message(call.message.chat.id, "Введите данные пользователя в формате userID, имя_пользователя ЧЕРЕЗ ЗАПЯТУЮ")
     
     elif call.data == 'newAdmin':
 
-        redis_db.set(f'newUserRole_{hashUser(call.message.chat.id)}', 'admin')
+        hashedID = hashUser(call.message.chat.id)
+
+        #state
+        redis_db.hset(f'user_{hashedID}', 'newUserRole', 'admin')
 
         bot.send_message(call.message.chat.id, "Введите данные пользователя в формате userID, имя_пользователя ЧЕРЕЗ ЗАПЯТУЮ")
     
     elif call.data.startswith('newClassInstance'):
 
-        redis_db.set(f'newClass_{hashUser(call.message.chat.id)}', call.data.split('|')[1])
+        hashedID = hashUser(call.message.chat.id)
 
-        bot.send_message(call.message.chat.id, f"Введите название нового реагента из класса {redis_db.get(f'newClass_{hashUser(call.message.chat.id)}')}, лучше делать его коротким, чтобы оно влезало на кнопки")
+        #state
+        redis_db.hset(f'user_{hashedID}', 'newClass', call.data.split('|')[1])
+
+        bot.send_message(call.message.chat.id, f"Введите название нового реагента из класса {redis_db.hget(f'user_{hashedID}', 'newClass')}, лучше делать его коротким, чтобы оно влезало на кнопки")
     
     elif call.data.startswith('info|'):
 
@@ -265,7 +256,7 @@ def callback_worker(call):
             res = handleRequestInfo(call.data, connection)
             #for user in usersDic:
                 #bot.send_message(user, f'Пользователь {userDic[hashUser(call.message.chat.id)]} что-то сделал с реагентом {str(res[0][0])}, в наличии {str(res[0][1])}') 
-            #bot.send_message(call.message.chat.id, f'Пользователь {userDic[hashUser(call.message.chat.id)]} что-то сделал с реагентом {str(res[0][0])}, в наличии {str(res[0][1])}')
+            bot.send_message(call.message.chat.id, f'Пользователь {call.message.chat.id} что-то сделал с реагентом {str(res[0][0])}, в наличии {str(res[0][1])}')
         except:
             bot.send_message(call.message.chat.id, 'Что-то серьезно сломалось, пишите @bochonni')
 
@@ -276,19 +267,30 @@ def message_reply(message):
     hashedID = hashUser(message.from_user.id)
 
     if redis_db.get(f'newUserAddition_{hashedID}') == 1:
+
         name = message.text.split(',')[1].strip()
+
         userID = (message.text.split(',')[0].strip())
         userRole = redis_db.get(f'newUserRole_{hashedID}')
+
         addUser(connection, userID, name, userRole)
+
         bot.send_message(message.from_user.id, f'Новый пользователь {name} внесен с правами {userRole}')
+
+        #clear state
         redis_db.set(f'newUserAddition_{hashedID}', 0)
         redis_db.set(f'newUserRole_{hashedID}', '')
 
     elif redis_db.get(f'newReagentAddition_{hashedID}') == 1 and redis_db.get(f'newClass_{hashedID}') != '':
+
         reagentName = message.text.strip()
+
         createNewDBinstance(connection, str(reagentName), redis_db.get(f'newClass_{hashedID}'))
         print(str(reagentName))
+
         bot.send_message(message.from_user.id, f'Новый реагент {reagentName} внесен как новый объект класса {redis_db.get(f"newClass_{hashedID}")})')
+        
+        #clear state
         redis_db.set(f'newReagentAddition_{hashedID}', 0)
         redis_db.set(f'newClass_{hashedID}', '')
 
@@ -315,3 +317,11 @@ def message_reply(message):
             bot.send_message(message.from_user.id, 'Приглашение не найдено, проверьте правильность введения ссылки-приглашения')
     
 bot.polling(none_stop=True, interval=0)
+
+
+#legacy configs and static
+'''config.newReagentAddition = False
+config.newClass = ''
+config.newUserAddition = False
+config.newUserRole = ''
+config.newReagentAddition = True'''

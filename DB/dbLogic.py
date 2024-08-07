@@ -17,7 +17,7 @@ def getOrganizationByUser(conn, userID):
 def getAllUsersOfOrganization(conn, userID):
     return print('this will return all users from your organization')
 
-#refactoring
+#done
 def handleRequest(callbackData, conn, organizationID):
 
     with conn:
@@ -25,7 +25,7 @@ def handleRequest(callbackData, conn, organizationID):
         hash = callDataSplit[1]
         toDo = callDataSplit[0]
         cur = conn.cursor()
-        if toDo == 'push':
+        if toDo == 'reapush':
             sql = """UPDATE reagents SET quantity = quantity + 1 
                     WHERE reagentID = (?)
                     AND organizationID = (?)
@@ -33,7 +33,7 @@ def handleRequest(callbackData, conn, organizationID):
             cur.execute(sql, (hash, organizationID))
             conn.commit()
 
-        elif toDo == 'pull':
+        elif toDo == 'reapull':
             sql = """UPDATE reagents SET quantity = quantity - 1 
                     WHERE reagentID = (?)
                     AND organizationID = (?)
@@ -45,34 +45,40 @@ def handleRequest(callbackData, conn, organizationID):
 
             return 'Этого реагента пока нет в базе'
 
-#refactoring   
-def handleRequestInfo(callbackData, conn):
+#done   
+def handleRequestInfo(conn, callbackData, userID):
 
     callDataSplit = callbackData.split('|')
     hash = callDataSplit[1]
+    hashedID = hashUser(userID)
     with conn:
         cur = conn.cursor()
-        sqlResult = """SELECT * FROM reagents INNER JOIN aliases on reagents.name = aliases.name WHERE alias = (?)"""
-        cur.execute(sqlResult, (hash,))
+        sqlResult = """SELECT * FROM reagents INNER JOIN users ON users.organizationID = reagents.organizationID WHERE reagentID = (?) AND userID = (?)"""
+        cur.execute(sqlResult, (hash, hashedID))
         row = cur.fetchall()
 
     return row
 
-def getClasses(conn):
+#done
+def getClasses(conn, userID):
+
+    hashedID = hashUser(userID)
 
     cur = conn.cursor()
-    sql = """SELECT DISTINCT classID FROM classes"""
-    cur.execute(sql)
+    sql = """SELECT DISTINCT classes.className, classes.classID FROM classes INNER JOIN reagents ON reagents.classID = classes.classID INNER JOIN users ON reagents.organizationID = users.organizationID WHERE users.userID = (?) ORDER BY classes.className"""
+    cur.execute(sql, (hashedID))
     row = cur.fetchall()
 
     return row
 
-#minor refactoring
-def getQuantityByClass(conn, classForFetch):
+#done
+def getQuantityByClass(conn, classForFetch, userID):
+
+    hashedID = hashUser(userID)
 
     cur = conn.cursor()
-    sql = """SELECT name, quantity FROM reagents WHERE class = (?)"""
-    cur.execute(sql, classForFetch)
+    sql = """SELECT name, quantity FROM reagents INNER JOIN classes ON classes.classID = reagents.classID INNER JOIN users ON users.organizationID = reagents.organizationID WHERE className = (?) and reagents.userID = (?) """
+    cur.execute(sql, (classForFetch, hashedID))
     row = cur.fetchall()
 
     return row
